@@ -329,15 +329,40 @@ brokerd_engine_private::set(char *args, QTcpSocket *sk)
 void
 brokerd_engine_private::get(char *args, QTcpSocket *sk)
 {
-	QString	key(args);
+	QString		key(args);
+	QList<QString>	tmpkeys;
+	QRegExp		re;
+	int		found = 0;
 
 	key = key.trimmed();
+	re.setPattern(key);
+	if (re.isValid()) {
+		foreach (const QString &k, data.keys()) {
+			if (k.contains(re)) {
+				tmpkeys.append(k);
+				found = 1;
+			}
+		}
+		if (found) {
+			if (tmpkeys.size() > 1)
+				qSort(tmpkeys.begin(), tmpkeys.end());
+			foreach (const QString &k, tmpkeys) {
+				sk->write(k.toAscii().data());
+				sk->write("=");
+				sk->write(data[k].value.toByteArray().data());
+				sk->write("\n");
+			}
+			return;
+		}
+	}
+
 	if (!data.contains(key)) {
 		sk->write(QString("%1: no such entry\n")
 		    .arg(key).toAscii().data());
 		return;
 	}
 
+	sk->write(key.toAscii().data());
 	sk->write(data[key].value.toByteArray().data());
 	sk->write("\n");
 }
