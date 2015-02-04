@@ -61,7 +61,7 @@ pub/sub
 		void keyEvent(brokerc_buf buf)
 		{
 			/* buf["foo.bar"] == QVariant(double, 23.33) */
-			buf["foo.bar"].toString();
+			buf["foo.bar"].toDouble();
 		};
 	};
 
