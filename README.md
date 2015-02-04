@@ -1,7 +1,7 @@
 qbrokerd
 ========
 
-simplistic key/value broker backend in Qt.
+simplistic event-driven key/value broker backend in Qt.
 
 License
 =======

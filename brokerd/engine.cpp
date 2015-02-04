@@ -74,7 +74,6 @@ brokerd_engine::unload()
 
 	foreach (QTcpSocket *se, tmpsks) {
 		se->write("unload\n");
-		se->flush();
 		se->close();
 		if (d->conns.contains(se))
 			d->conns.removeOne(se);
@@ -175,6 +174,7 @@ brokerd_engine::read()
 		if ((args = strchr(method, ' ')) == NULL &&
 		    strcmp(method, "list") < 0) {
 			s->write("invalid format\n");
+			s->flush();
 			return;
 		}
 
@@ -197,18 +197,21 @@ brokerd_engine::read()
 		} else if (!strcmp(method, "list")) {
 			if (args) {
 				s->write("invalid format\n");
+				s->flush();
 				continue;
 			}
 			d->list(s);
 		} else if (!strcmp(method, "reset")) {
 			if (args) {
 				s->write("invalid format\n");
+				s->flush();
 				continue;
 			}
 			d->reset(s);
 		} else if (!strcmp(method, "save")) {
 			if (args == NULL) {
 				s->write("invalid format\n");
+				s->flush();
 				continue;
 			}
 			args[strcspn(args, " \t\r\n=")] = '\0';
@@ -228,6 +231,7 @@ brokerd_engine_private::pub(char *args, QTcpSocket *sk)
 	key = args;
 	if ((value = strchr(key, '=')) == NULL) {
 		sk->write("invalid format\n");
+		sk->flush();
 		return;
 	}
 	*value++ = '\0';
@@ -237,11 +241,13 @@ brokerd_engine_private::pub(char *args, QTcpSocket *sk)
 	if (!data.contains(key)) {
 		sk->write(key);
 		sk->write(": no such entry\n");
+		sk->flush();
 		return;
 	}
 
 	data[key].value = value;
 	sk->write("OK\n");
+	sk->flush();
 
 	if (data[key].sessions.size() > 0) {
 		foreach (QTcpSocket *se, data[key].sessions) {
@@ -280,6 +286,7 @@ brokerd_engine_private::sub(char *args, QTcpSocket *sk)
 				sk->write("\n");
 			}
 			sessions[key] = sk;
+			sk->flush();
 			return;
 		}
 	}
@@ -287,12 +294,14 @@ brokerd_engine_private::sub(char *args, QTcpSocket *sk)
 	if (!data.contains(key)) {
 		sk->write(key.toAscii().data());
 		sk->write(": no such entry\n");
+		sk->flush();
 		return;
 	}
 
 	sk->write(key.toAscii().data());
 	sk->write(data[key].value.toByteArray().data());
 	sk->write("\n");
+	sk->flush();
 	data[key].sessions.append(sk);
 	sessions[key] = sk;
 }
@@ -307,6 +316,7 @@ brokerd_engine_private::set(char *args, QTcpSocket *sk)
 	key = args;
 	if ((value = strchr(key, '=')) == NULL) {
 		sk->write("invalid format\n");
+		sk->flush();
 		return;
 	}
 	*value++ = '\0';
@@ -324,6 +334,7 @@ brokerd_engine_private::set(char *args, QTcpSocket *sk)
 		}
 	}
 	sk->write("OK\n");
+	sk->flush();
 }
 
 void
@@ -352,6 +363,7 @@ brokerd_engine_private::get(char *args, QTcpSocket *sk)
 				sk->write(data[k].value.toByteArray().data());
 				sk->write("\n");
 			}
+			sk->flush();
 			return;
 		}
 	}
@@ -359,12 +371,14 @@ brokerd_engine_private::get(char *args, QTcpSocket *sk)
 	if (!data.contains(key)) {
 		sk->write(QString("%1: no such entry\n")
 		    .arg(key).toAscii().data());
+		sk->flush();
 		return;
 	}
 
 	sk->write(key.toAscii().data());
 	sk->write(data[key].value.toByteArray().data());
 	sk->write("\n");
+	sk->flush();
 }
 
 void
@@ -374,6 +388,7 @@ brokerd_engine_private::list(QTcpSocket *sk)
 
 	if (!data.size()) {
 		sk->write("empty\n");
+		sk->flush();
 		return;
 	}
 
@@ -383,6 +398,7 @@ brokerd_engine_private::list(QTcpSocket *sk)
 		sk->write(k.toAscii().data());
 		sk->write("\n");
 	}
+	sk->flush();
 }
 
 void
@@ -404,6 +420,7 @@ brokerd_engine_private::reset(QTcpSocket *sk)
 
 	data.clear();
 	sk->write("OK\n");
+	sk->flush();
 }
 
 void
@@ -431,6 +448,7 @@ brokerd_engine_private::del(char *args, QTcpSocket *sk)
 			sk->write("invalid regular expression:");
 			sk->write(key.toAscii().data());
 			sk->write("\n");
+			sk->flush();
 			return;
 		}
 		foreach (const QString &k, data.keys()) {
@@ -458,6 +476,7 @@ brokerd_engine_private::del(char *args, QTcpSocket *sk)
 		sk->write(key.toAscii().data());
 		sk->write(": no such entry\n");
 	}
+	sk->flush();
 }
 
 void
@@ -466,9 +485,11 @@ brokerd_engine_private::save(char *args, QTcpSocket *sk)
 	QFile		file(args);
 
 	if (!file.open(QIODevice::WriteOnly)) {
-		sk->write("failed to open file:");
+		sk->write("fail to open file:");
 		sk->write(args);
 		sk->write("\n");
+		sk->flush();
+		return;
 	}
 	foreach (const QString &k, data.keys()) {
 		file.write(k.toAscii());
@@ -478,4 +499,5 @@ brokerd_engine_private::save(char *args, QTcpSocket *sk)
 	}
 	file.close();
 	sk->write("OK\n");
+	sk->flush();
 }

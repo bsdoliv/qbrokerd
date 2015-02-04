@@ -44,7 +44,7 @@ $(PROG).pro: Makefile
 	'MOC_DIR = .moc' \
 	'CONFIG += debug' \
 	'QT -= gui' \
-	'QT += network' \
+	'QT += network'
 	@echo "include(./qtservice/qtservice.pri)" >> $@
 
 .PHONY: distclean
