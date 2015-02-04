@@ -3,6 +3,97 @@ qbrokerd
 
 simplistic event-driven key/value broker backend in Qt.
 
+build
+=====
+
+	% export QTDIR=/opt/qt
+	% cd brokerd && gmake
+
+running
+=======
+
+brokerd will listen to 8008 tcp port. try the following to test:
+
+	% nc localhost 8008
+	> list
+	> set foo=bar
+	OK
+	> list
+	foo
+	> get foo
+	foo=bar
+	> sub foo
+	foo=bar
+
+from another client:
+	% nc localhost 8008
+	> pub foo=baz
+
+the first client will receive "foo=bar".
+
+coding
+======
+
+get/set
+	#include "brokerc.h"
+
+	brokerc_key	key;
+	brokerc		bc;
+	QVariant	value;
+
+	/* sets key foo.bar with value foobar */
+	key.add("foo");
+	key.add("bar");
+	bc.set(key, "foobar");
+
+	/* key now is foo.* */
+	key.readd("*");
+	value = key.get("*");
+
+pub/sub
+	/* sub.cpp */
+	#include "brokerc.h"
+
+	class subscriber : public QObject
+	{
+		Q_OBJECT
+	public slots:
+		void keyEvent(brokerc_buf buf)
+		{
+			/* buf["foo.bar"] == QVariant(double, 23.33) */
+			buf["foo.bar"].toString();
+		};
+	};
+
+	void
+	subscribe() {
+		brokerc_key	 key;
+		brokerc		 bc;
+		subscriber	*sc = new subscriber;
+
+		key.add("foo");
+		key.add("*");
+		bc.sub(key, &sc, SLOT(keyEvent(brokerc_buf)));
+	}
+	#include "pub.moc"
+
+	/* pub.cpp */
+	#include "brokerc.h"
+
+	void
+	publish() {
+		brokerc_key	 key;
+		QVariant	 value;
+		brokerc		 bc;
+		subscriber	*sc = new subscriber;
+
+		key.add("foo");
+		key.add("bar");
+		value = 23.33;
+		bc.set(key, value);
+		bc.pub(key, value);
+	}
+
 License
 =======
 
