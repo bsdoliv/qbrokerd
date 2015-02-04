@@ -26,6 +26,7 @@ brokerd will listen to 8008 tcp port. try the following to test:
 	foo=bar
 
 from another client:
+
 	% nc localhost 8008
 	> pub foo=baz
 
@@ -35,6 +36,7 @@ coding
 ======
 
 get/set
+
 	#include "brokerc.h"
 
 	brokerc_key	key;
@@ -51,6 +53,7 @@ get/set
 	value = key.get("*");
 
 pub/sub
+
 	/* sub.cpp */
 	#include "brokerc.h"
 
