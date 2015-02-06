@@ -24,6 +24,7 @@
 
 class brokerc_key : public QString {
 public:
+		brokerc_key(const char *s) : QString(s) { }
 		brokerc_key(const QString &s) : QString(s) { }
 		brokerc_key() : QString() { }
 	brokerc_key	add(const QString &s) {
@@ -68,9 +69,9 @@ public:
 		 brokerc();
 		~brokerc();
 	int	 set(const brokerc_key &, const QVariant &);
-	int	 get(const brokerc_key &, const QVariant &);
-	int	 pub(const brokerc_key &, const QVariant &v = QVariant());
-	int	 sub(const brokerc_key &, QObject *obl, const char *);
+	QVariant get(const brokerc_key &);
+	int	 pub(const brokerc_key &, const QVariant &);
+	int	 sub(const brokerc_key &, QObject *, const char *);
 	int	 repub(const brokerc_key &);
 private slots:
 	void	 sub_read();

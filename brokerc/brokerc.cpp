@@ -71,8 +71,8 @@ brokerc::set(const brokerc_key &key, const QVariant &value)
 	return (-1);
 }
 
-int
-brokerc::get(const brokerc_key &, const QVariant &)
+QVariant
+brokerc::get(const brokerc_key &)
 {
 	return (0);
 }
