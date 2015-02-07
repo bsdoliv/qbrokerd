@@ -15,9 +15,9 @@
 QTDIR?=/opt/qt486
 QMAKE=${QTDIR}/bin/qmake
 
-PROG=		brokerc
+PROG=		brokerclient
 
-SOURCES=	brokerc.cpp main.cpp
+SOURCES=	brokerc.cpp brokerclient.cpp
 
 HEADERS=	brokerc.h
 
