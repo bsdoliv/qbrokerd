@@ -44,6 +44,7 @@ int
 brokerc::set(const brokerc_key &key, const QVariant &value)
 {
 	QTcpSocket		*sk = new QTcpSocket;
+	int			 ret = -1;
 
 	sk->connectToHost("localhost", 8008);
 	if (!sk->waitForConnected(CONNECT_TIMEOUT))
@@ -62,13 +63,12 @@ brokerc::set(const brokerc_key &key, const QVariant &value)
 	if (sk->readAll().trimmed() != "OK")
 		goto fail;
 
-	sk->close();
-	sk->deleteLater();
-	return (0);
+	ret = 0;
 
  fail:
+	sk->close();
 	sk->deleteLater();
-	return (-1);
+	return (ret);
 }
 
 QVariant
@@ -90,9 +90,9 @@ brokerc::get(const brokerc_key &key)
 		goto fail;
 
 	val = sk->readAll().trimmed();
-	sk->close();
 
  fail:
+	sk->close();
 	sk->deleteLater();
 	return (val);
 }
