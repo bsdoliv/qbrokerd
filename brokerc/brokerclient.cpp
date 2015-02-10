@@ -42,6 +42,12 @@ public:
 		fflush(stdout);
 	}
 
+	~brokerclient()
+	{
+		delete stdin_notifier;
+		stdin_file.close();
+	}
+
 private slots:
 	void read_stdin(int)
 	{
