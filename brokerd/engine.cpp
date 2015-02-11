@@ -106,6 +106,7 @@ brokerd_engine::load(const QString &filename)
 	while (!file.atEnd()) {
 		if (file.readLine(line, sizeof(line)) == -1)
 			continue;
+		line[strcspn(line, " \t\r\n")] = '\0';
 
 		key = line;
 		if (line[0] == '#' || (value = strchr(key, ':')) == NULL)
@@ -113,7 +114,6 @@ brokerd_engine::load(const QString &filename)
 
 		*value++ = '\0';
 		value += strspn(value, " \t\r\n");
-		value[strcspn(value, " \t\r\n")] = '\0';
 		d->data[key].value = value;
 	}
 	file.close();
@@ -170,6 +170,7 @@ brokerd_engine::read()
 
 	while (s->canReadLine() && s->readLine(line, sizeof(line))) {
 		method = line;
+		line[strcspn(line, " \t\r\n")] = '\0';
 
 		if ((args = strchr(method, ' ')) == NULL &&
 		    strcmp(method, "list") < 0) {
@@ -181,8 +182,7 @@ brokerd_engine::read()
 		if (args) {
 			*args++ = '\0';
 			args += strspn(args, " \t\r\n=");
-		} else
-			line[strcspn(method, " \t\r\n=")] = '\0';
+		}
 
 		if (!strcmp(method, "pub")) {
 			d->pub(args, s);
@@ -214,7 +214,6 @@ brokerd_engine::read()
 				s->flush();
 				continue;
 			}
-			args[strcspn(args, " \t\r\n=")] = '\0';
 			d->save(args, s);
 		} else {
 			s->write("invalid method\n");
@@ -236,7 +235,6 @@ brokerd_engine_private::pub(char *args, QTcpSocket *sk)
 	}
 	*value++ = '\0';
 	value += strspn(value, " \t\r\n=");
-	value[strcspn(value, " \t\r\n=")] = '\0';
 
 	if (!data.contains(key)) {
 		sk->write(key);
@@ -321,7 +319,6 @@ brokerd_engine_private::set(char *args, QTcpSocket *sk)
 	}
 	*value++ = '\0';
 	value += strspn(value, " \t\r\n");
-	value[strcspn(value, " \t\r\n")] = '\0';
 	data[key].value = value;
 	ks = key;
 
