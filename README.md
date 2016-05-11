@@ -1,10 +1,10 @@
 qbrokerd
 ========
 
-minimalistic event-driven key/value broker backend in Qt.
+minimalistic event-driven key/value persistent-broker backend in Qt.
 
-build
-=====
+building
+========
 
 	% export QTDIR=/opt/qt
 	% cd brokerd && gmake
@@ -12,7 +12,10 @@ build
 running
 =======
 
-brokerd will listen to 8008 tcp port. try the following to test:
+start brokerd to listen on 8008 tcp port:
+	% ./brokerd/brokerd
+
+start a client and subscribe to a key:
 
 	% nc localhost 8008
 	> list
@@ -25,12 +28,12 @@ brokerd will listen to 8008 tcp port. try the following to test:
 	> sub foo
 	foo=bar
 
-from another client:
+another client:
 
 	% nc localhost 8008
 	> pub foo=baz
 
-the first client will receive "foo=bar".
+the first client will receive "foo=baz".
 
 coding
 ======
@@ -43,7 +46,7 @@ get/set
 	brokerc		bc;
 	QVariant	value;
 
-	/* sets key foo.bar with value foobar */
+	/* sets key foo.bar with value "foobar" */
 	key.add("foo");
 	key.add("bar");
 	bc.set(key, "foobar");
@@ -63,7 +66,9 @@ pub/sub
 	public slots:
 		void keyEvent(brokerc_buf buf)
 		{
-			/* buf["foo.bar"] == QVariant(double, 23.33) */
+			/*
+			 * buf["foo.bar"] == QVariant(double, 23.33)
+			 */
 			buf["foo.bar"].toDouble();
 		};
 	};
@@ -88,7 +93,6 @@ pub/sub
 		brokerc_key	 key;
 		QVariant	 value;
 		brokerc		 bc;
-		subscriber	*sc = new subscriber;
 
 		key.add("foo");
 		key.add("bar");
@@ -97,7 +101,7 @@ pub/sub
 		bc.pub(key, value);
 	}
 
-License
+license
 =======
 
  * Copyright (c) 2015 Andre de Oliveira <deoliveirambx@googlemail.com>
