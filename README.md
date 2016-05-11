@@ -13,6 +13,7 @@ running
 =======
 
 start brokerd to listen on 8008 tcp port:
+
 	% ./brokerd/brokerd
 
 start a client and subscribe to a key:
