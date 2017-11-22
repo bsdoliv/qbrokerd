@@ -109,7 +109,7 @@ brokerd_engine::load(const QString &filename)
 		line[strcspn(line, " \t\r\n")] = '\0';
 
 		key = line;
-		if (line[0] == '#' || (value = strchr(key, ':')) == NULL)
+		if (line[0] == '#' || (value = strchr(key, '=')) == NULL)
 			continue;
 
 		*value++ = '\0';
