@@ -21,12 +21,11 @@ SOURCES=	brokerd.cpp engine.cpp
 
 HEADERS=	brokerd.h engine.h
 
-CFLAGS+=	-Wstrict-prototypes -Wmissing-prototypes
 CFLAGS+=	-Wmissing-declarations
 CFLAGS+=	-Wpointer-arith
 CFLAGS+=	-Wsign-compare
 
-all: ${PROG}
+all: ${PROG} ${SOURCES}
 
 ${PROG}: ${PROG}.makefile
 	${MAKE} -f $<
