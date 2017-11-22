@@ -25,9 +25,9 @@ CFLAGS+=	-Wmissing-declarations
 CFLAGS+=	-Wpointer-arith
 CFLAGS+=	-Wsign-compare
 
-all: ${PROG} ${SOURCES}
+all: ${PROG}
 
-${PROG}: ${PROG}.makefile
+${PROG}: ${PROG}.makefile ${SOURCES}
 	${MAKE} -f $<
 
 $(PROG).makefile: $(PROG).pro
