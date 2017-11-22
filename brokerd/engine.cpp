@@ -170,7 +170,7 @@ brokerd_engine::read()
 
 	while (s->canReadLine() && s->readLine(line, sizeof(line))) {
 		method = line;
-		line[strcspn(line, " \t\r\n")] = '\0';
+		line[strcspn(line, "\r\n")] = '\0';
 
 		if ((args = strchr(method, ' ')) == NULL &&
 		    strcmp(method, "list") < 0) {
