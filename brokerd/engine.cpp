@@ -32,6 +32,7 @@ struct brokerd_engine_private {
 	QList<QTcpSocket *>		 conns;
 	QHash<QString, struct payload>	 data;
 	QHash<QString, QTcpSocket *>	 sessions;
+	QString				 filename;
 
 	void	pub(char *, QTcpSocket *);
 	void	sub(char *, QTcpSocket *);
@@ -117,6 +118,7 @@ brokerd_engine::load(const QString &filename)
 		d->data[key].value = value;
 	}
 	file.close();
+	d->filename = filename;
 }
 
 int
@@ -204,11 +206,6 @@ brokerd_engine::read()
 			}
 			d->reset(s);
 		} else if (!strcmp(method, "save")) {
-			if (args == NULL) {
-				s->write("invalid format\n");
-				s->flush();
-				continue;
-			}
 			d->save(args, s);
 		} else {
 			s->write("invalid method\n");
@@ -508,11 +505,21 @@ brokerd_engine_private::del(char *args, QTcpSocket *sk)
 void
 brokerd_engine_private::save(const char *args, QTcpSocket *sk)
 {
-	QFile		file(args);
+	QFile		file(filename);
 
-	if (!file.open(QIODevice::WriteOnly)) {
+	if (!args && filename.isEmpty()) {
+		sk->write("invalid format\n");
+		sk->flush();
+		return;
+	}
+
+	if (args)
+		file.setFileName(args);
+
+	if (!file.open(QIODevice::WriteOnly) ||
+	    !file.resize(0)) {
 		sk->write("fail to open file:");
-		sk->write(args);
+		sk->write(file.fileName().toAscii());
 		sk->write("\n");
 		sk->flush();
 		return;
