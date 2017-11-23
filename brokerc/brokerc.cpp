@@ -37,6 +37,13 @@ brokerc::brokerc() : QObject(),
 
 brokerc::~brokerc()
 {
+	if (d->subscribers.size() > 0) {
+		foreach (const struct subscriber &scp,
+		    d->subscribers.values()) {
+			scp.sc_sock->deleteLater();
+		}
+	}
+
 	delete d;
 }
 
