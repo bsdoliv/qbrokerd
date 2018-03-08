@@ -68,11 +68,18 @@ class brokerc : public QObject
 public:
 		 brokerc();
 		~brokerc();
+
+	void	 set_server_address(const QString &);
+		/* commands */
 	int	 set(const brokerc_key &, const QVariant &);
 	QVariant get(const brokerc_key &);
 	int	 pub(const brokerc_key &, const QVariant &);
 	int	 sub(const brokerc_key &, QObject *, const char *);
+	int	 unsub(const brokerc_key &, QObject *, const char *);
 	int	 repub(const brokerc_key &);
+	int	 inc(const brokerc_key &);
+	int	 add(const brokerc_key &, const QVariant &);
+	int	 exists(const brokerc_key &);
 private slots:
 	void	 sub_read();
 	void	 sub_close();

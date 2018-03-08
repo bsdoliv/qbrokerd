@@ -27,12 +27,14 @@ struct subscriber {
 
 struct brokerc_private {
 	QHash<brokerc_key, struct subscriber>	subscribers;
+	QString					serveraddr;
 };
 
 brokerc::brokerc() : QObject(),
     d(new brokerc_private)
 {
 	qRegisterMetaType<brokerc_buf>("brokerc_buf");
+	d->serveraddr = "localhost";
 }
 
 brokerc::~brokerc()
@@ -47,13 +49,19 @@ brokerc::~brokerc()
 	delete d;
 }
 
+void
+brokerc::set_server_address(const QString &serveraddr)
+{
+	d->serveraddr = serveraddr;
+}
+
 int
 brokerc::set(const brokerc_key &key, const QVariant &value)
 {
 	QTcpSocket		*sk = new QTcpSocket;
 	int			 ret = -1;
 
-	sk->connectToHost("localhost", 8008);
+	sk->connectToHost(d->serveraddr, 8008);
 	if (!sk->waitForConnected(CONNECT_TIMEOUT))
 		goto fail;
 
@@ -84,7 +92,7 @@ brokerc::get(const brokerc_key &key)
 	QTcpSocket		*sk = new QTcpSocket;
 	QVariant		 val(QVariant::Invalid);
 
-	sk->connectToHost("localhost", 8008);
+	sk->connectToHost(d->serveraddr, 8008);
 	if (!sk->waitForConnected(CONNECT_TIMEOUT))
 		goto fail;
 
@@ -118,11 +126,7 @@ brokerc::sub(const brokerc_key &key, QObject *obj, const char *slot)
 	int			 midx;
 	QByteArray		 norm_slot;
 
-	/* skip code */
-	++slot;
-	norm_slot = QMetaObject::normalizedSignature(slot);
-
-	sk->connectToHost("localhost", 8008);
+	sk->connectToHost(d->serveraddr, 8008);
 	if (!sk->waitForConnected(CONNECT_TIMEOUT))
 		goto fail;
 
@@ -131,6 +135,9 @@ brokerc::sub(const brokerc_key &key, QObject *obj, const char *slot)
 	connect(sk, SIGNAL(disconnected()), SLOT(sub_close()),
 	    Qt::QueuedConnection);
 
+	/* skip code */
+	++slot;
+	norm_slot = QMetaObject::normalizedSignature(slot);
 	if ((midx = obj->metaObject()->indexOfMethod(norm_slot)) == -1)
 		goto fail;
 	sc.sc_slot = obj->metaObject()->method(midx);
@@ -150,6 +157,32 @@ brokerc::sub(const brokerc_key &key, QObject *obj, const char *slot)
  fail:
 	sk->deleteLater();
 	return (-1);
+}
+
+int
+brokerc::unsub(const brokerc_key &key, QObject *obj, const char *slot)
+{
+	QByteArray	norm_slot;
+	int		midx;
+
+	if (d->subscribers.size() <= 0)
+		return -1;
+
+	++slot;
+	norm_slot = QMetaObject::normalizedSignature(slot);
+	midx = obj->metaObject()->indexOfMethod(norm_slot);
+
+	foreach (const struct subscriber &scp, d->subscribers.values(key)) {
+		if (scp.sc_object != obj ||
+		    strcmp(scp.sc_slot.signature(),
+		    obj->metaObject()->method(midx).signature()))
+			continue;
+		scp.sc_sock->close();
+		scp.sc_sock->deleteLater();
+		d->subscribers.remove(key);
+	}
+
+	return 0;
 }
 
 int
@@ -211,3 +244,98 @@ void
 brokerc::pub_read()
 {
 };
+
+int
+brokerc::inc(const brokerc_key &key)
+{
+	QTcpSocket	*sk = new QTcpSocket;
+	QVariant	 val(QVariant::Invalid);
+	int		 ret = -1;
+
+	sk->connectToHost(d->serveraddr, 8008);
+	if (!sk->waitForConnected(CONNECT_TIMEOUT))
+		goto fail;
+
+	sk->write("inc ");
+	sk->write(key.toAscii().data());
+	sk->write("\n");
+	sk->flush();
+
+	if (!sk->waitForReadyRead(READ_TIMEOUT))
+		goto fail;
+
+	val = sk->readAll().trimmed();
+
+	if (!val.contains(key));
+		goto fail;
+
+	ret = val.toInt();
+
+ fail:
+	sk->close();
+	sk->deleteLater();
+
+	return (ret);
+}
+
+int
+brokerc::add(const brokerc_key &key, const QVariant &value)
+{
+	QTcpSocket		*sk = new QTcpSocket;
+	int			 ret = -1;
+
+	sk->connectToHost(d->serveraddr, 8008);
+	if (!sk->waitForConnected(CONNECT_TIMEOUT))
+		goto fail;
+
+	sk->write("add ");
+	sk->write(key.toAscii().data());
+	sk->write(" ");
+	sk->write(value.toString().toAscii().data());
+	sk->write("\n");
+	sk->flush();
+
+	if (!sk->waitForReadyRead(READ_TIMEOUT))
+		goto fail;
+
+	if (sk->readAll().trimmed() != "OK")
+		goto fail;
+
+	ret = 0;
+
+ fail:
+	sk->close();
+	sk->deleteLater();
+	return (ret);
+}
+
+int
+brokerc::exists(const brokerc_key &key)
+{
+	QTcpSocket	*sk = new QTcpSocket;
+	QVariant	 val(QVariant::Invalid);
+	int		 ret = -1;
+
+	sk->connectToHost(d->serveraddr, 8008);
+	if (!sk->waitForConnected(CONNECT_TIMEOUT))
+		goto fail;
+
+	sk->write("exists ");
+	sk->write(key.toAscii().data());
+	sk->write("\n");
+	sk->flush();
+
+	if (!sk->waitForReadyRead(READ_TIMEOUT))
+		goto fail;
+
+	if (sk->readAll().trimmed() != "OK")
+		goto fail;
+
+	ret = 0;
+
+ fail:
+	sk->close();
+	sk->deleteLater();
+
+	return (ret);
+}
