@@ -46,7 +46,7 @@ brokerd::start()
 	engine->load(filename);
 
 	if (!engine->listen(QHostAddress::Any, 8008))
-		log_debug("fail to listen on 8008");
+		log_info("fail to listen on 8008");
 }
 
 void
