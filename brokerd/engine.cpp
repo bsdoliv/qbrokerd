@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Andre de Oliveira <deoliveirambx@googlemail.com>
+ * Copyright (c) 2015-2018 Andre de Oliveira <deoliveirambx@googlemail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -39,6 +39,9 @@ struct brokerd_engine_private {
 	void	set(char *, QTcpSocket *);
 	void	get(char *, QTcpSocket *);
 	void	del(char *, QTcpSocket *);
+	void	inc(char *, QTcpSocket *);
+	void	add(char *, QTcpSocket *);
+	void	exists(char *, QTcpSocket *);
 	void	save(const char *, QTcpSocket *);
 	void	list(const char *, QTcpSocket *);
 	void	reset(QTcpSocket *);
@@ -196,6 +199,12 @@ brokerd_engine::read()
 			d->get(args, s);
 		} else if (!strcmp(method, "del")) {
 			d->del(args, s);
+		} else if (!strcmp(method, "inc")) {
+			d->inc(args, s);
+		} else if (!strcmp(method, "add")) {
+			d->add(args, s);
+		} else if (!strcmp(method, "exists")) {
+			d->exists(args, s);
 		} else if (!strcmp(method, "list")) {
 			d->list(args, s);
 		} else if (!strcmp(method, "reset")) {
@@ -245,6 +254,7 @@ brokerd_engine_private::pub(char *args, QTcpSocket *sk)
 			se->write("=");
 			se->write(value);
 			se->write("\n");
+			se->flush();
 		}
 	}
 }
@@ -297,6 +307,121 @@ brokerd_engine_private::sub(char *args, QTcpSocket *sk)
 }
 
 void
+brokerd_engine_private::inc(char *args, QTcpSocket *sk)
+{
+	QString		key(args);
+	long long	val;
+	bool		ok = false;
+
+	key = key.trimmed();
+	if (!data.contains(key)) {
+		sk->write(QString("%1: no such entry\n")
+		    .arg(key).toAscii().data());
+		sk->flush();
+		return;
+	}
+
+	val = data[key].value.toLongLong(&ok);
+	if (!ok) {
+		sk->write("no number format\n");
+		sk->flush();
+		return;
+	}
+
+	data[key].value = ++val;
+	if (data[key].sessions.size() > 0) {
+		foreach (QTcpSocket *se, data[key].sessions) {
+			se->write(key.toAscii().data());
+			se->write("=");
+			se->write(data[key].value.toByteArray().data());
+			se->write("\n");
+		}
+	}
+
+	sk->write(key.toAscii().data());
+	sk->write("=");
+	sk->write(data[key].value.toString().toAscii().data());
+	sk->write("\n");
+	sk->flush();
+
+	return;
+}
+
+void
+brokerd_engine_private::add(char *args, QTcpSocket *sk)
+{
+	long long	tmpval, amount;
+	bool		ok = false;
+	char		*key, *value;
+
+	key = args;
+	if ((value = strchr(key, ' ')) == NULL) {
+		sk->write("invalid format\n");
+		sk->flush();
+		return;
+	}
+	*value++ = '\0';
+	value += strspn(value, " \t\r\n=");
+
+	if (!data.contains(key)) {
+		sk->write(key);
+		sk->write(": no such entry\n");
+		sk->flush();
+		return;
+	}
+
+	tmpval = data[key].value.toLongLong(&ok);
+	if (!ok) {
+		sk->write("no number format\n");
+		sk->flush();
+		return;
+	}
+
+	ok = false;
+	amount = QString(value).toLongLong(&ok);
+	if (!ok) {
+		sk->write("no number format for given amount\n");
+		sk->flush();
+		return;
+	}
+
+	data[key].value = (tmpval + amount);
+	if (data[key].sessions.size() > 0) {
+		foreach (QTcpSocket *se, data[key].sessions) {
+			se->write(key);
+			se->write("=");
+			se->write(data[key].value.toByteArray().data());
+			se->write("\n");
+		}
+	}
+
+	sk->write(key);
+	sk->write("=");
+	sk->write(data[key].value.toString().toAscii().data());
+	sk->write("\n");
+	sk->flush();
+
+	return;
+}
+
+void
+brokerd_engine_private::exists(char *args, QTcpSocket *sk)
+{
+	QString		key(args);
+
+	key = key.trimmed();
+	if (!data.contains(key)) {
+		sk->write(QString("%1: no such entry\n")
+		    .arg(key).toAscii().data());
+		sk->flush();
+		return;
+	}
+	sk->write("OK\n");
+	sk->flush();
+	return;
+}
+
+void
 brokerd_engine_private::set(char *args, QTcpSocket *sk)
 {
 	QTcpSocket	*sock;
@@ -334,6 +459,9 @@ brokerd_engine_private::get(char *args, QTcpSocket *sk)
 	QRegExp		re;
 	int		found = 0;
 
+	/*
+	 * first process a regexp that will match multiple keys
+	 */
 	key = key.trimmed();
 	re.setPattern(key);
 	if (re.isValid()) {
@@ -376,7 +504,7 @@ brokerd_engine_private::list(const char *args, QTcpSocket *sk)
 	QList<QString> ks;
 
 	/*
-	 * by default list keys
+	 * default: list keys
 	 */
 	if (!args) {
 		if (!data.size()) {
