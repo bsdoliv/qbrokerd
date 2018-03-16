@@ -20,8 +20,6 @@
 #include <QObject>
 
 class QHostAddress;
-
-class brokerd_handler;
 struct brokerd_engine_private;
 
 class brokerd_engine : public QObject
