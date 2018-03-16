@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Andre de Oliveira <deoliveirambx@googlemail.com>
+ * Copyright (c) 2015-2018 Andre de Oliveira <deoliveirambx@googlemail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -250,7 +250,7 @@ brokerc::inc(const brokerc_key &key)
 {
 	QTcpSocket	*sk = new QTcpSocket;
 	QVariant	 val(QVariant::Invalid);
-	int		 ret = -1;
+	int		 ret = 0;
 
 	sk->connectToHost(d->serveraddr, 8008);
 	if (!sk->waitForConnected(CONNECT_TIMEOUT))
@@ -266,7 +266,7 @@ brokerc::inc(const brokerc_key &key)
 
 	val = sk->readAll().trimmed();
 
-	if (!val.contains(key));
+	if (!val.toString().contains(key))
 		goto fail;
 
 	ret = val.toInt();
@@ -282,7 +282,8 @@ int
 brokerc::add(const brokerc_key &key, const QVariant &value)
 {
 	QTcpSocket		*sk = new QTcpSocket;
-	int			 ret = -1;
+	QVariant		val(QVariant::Invalid);
+	int			 ret = 0;
 
 	sk->connectToHost(d->serveraddr, 8008);
 	if (!sk->waitForConnected(CONNECT_TIMEOUT))
@@ -298,10 +299,12 @@ brokerc::add(const brokerc_key &key, const QVariant &value)
 	if (!sk->waitForReadyRead(READ_TIMEOUT))
 		goto fail;
 
-	if (sk->readAll().trimmed() != "OK")
+	val = sk->readAll().trimmed();
+
+	if (!val.toString().contains(key))
 		goto fail;
 
-	ret = 0;
+	ret = val.toInt();
 
  fail:
 	sk->close();
@@ -321,6 +324,36 @@ brokerc::exists(const brokerc_key &key)
 		goto fail;
 
 	sk->write("exists ");
+	sk->write(key.toAscii().data());
+	sk->write("\n");
+	sk->flush();
+
+	if (!sk->waitForReadyRead(READ_TIMEOUT))
+		goto fail;
+
+	if (sk->readAll().trimmed() != "OK")
+		goto fail;
+
+	ret = 0;
+
+ fail:
+	sk->close();
+	sk->deleteLater();
+
+	return (ret);
+}
+
+int
+brokerc::del(const brokerc_key &key)
+{
+	QTcpSocket	*sk = new QTcpSocket;
+	int		 ret = -1;
+
+	sk->connectToHost(d->serveraddr, 8008);
+	if (!sk->waitForConnected(CONNECT_TIMEOUT))
+		goto fail;
+
+	sk->write("del ");
 	sk->write(key.toAscii().data());
 	sk->write("\n");
 	sk->flush();

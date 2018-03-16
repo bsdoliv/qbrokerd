@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Andre de Oliveira <deoliveirambx@googlemail.com>
+ * Copyright (c) 2015-2018 Andre de Oliveira <deoliveirambx@googlemail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -80,6 +80,7 @@ public:
 	int	 inc(const brokerc_key &);
 	int	 add(const brokerc_key &, const QVariant &);
 	int	 exists(const brokerc_key &);
+	int	 del(const brokerc_key &);
 private slots:
 	void	 sub_read();
 	void	 sub_close();
