@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Andre de Oliveira <deoliveirambx@googlemail.com>
+ * Copyright (c) 2015-2018 Andre de Oliveira <deoliveirambx@googlemail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -45,7 +45,7 @@ brokerd::start()
 
 	engine->load(filename);
 
-	if (!engine->listen(QHostAddress::Any, 8008))
+	if (!engine->listen(QHostAddress::LocalHost, 8008))
 		log_info("fail to listen on 8008");
 }
 
